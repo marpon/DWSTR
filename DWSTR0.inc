@@ -1,4 +1,4 @@
-/'   DWSTR.inc  release 1.4.4 : 10 dec 2018  13h20 by Marc Pons
+/'   DWSTR.inc  release 1.4.2 : 26 Nov 2016  18h25 by Marc Pons
 
  Topics - Behavior explanations
 
@@ -96,8 +96,7 @@ conversion from / to    wstring / string
    #DEFINE _MY_SIZE_WSTRING_ 4                   ' sizeof(wstring)
    TYPE _MY_W_CHAR_ AS ULONG                     ' equivalent type
    #INCLUDE ONCE "crt/locale.bi"                 ' is it already included in LINUX ? not sure: if yes can be deleted
-   Dim SHARED as string _LOCAL_VERIF_1234567890
-	_LOCAL_VERIF_1234567890 = *SetLocale(LC_CTYPE , 0) ' it is needed, probably SetLocale is already done?
+   Dim SHARED as string _LOCAL_VERIF_1234567890 = *SetLocale(LC_CTYPE , 0) ' it is needed, probably SetLocale is already done?
    if left(UCASE(_LOCAL_VERIF_1234567890), 10) = "LC_COLLATE" THEN _LOCAL_VERIF_1234567890 = *SetLocale(LC_CTYPE , "") 'init local if not done before
 	#IFDEF _DWSTR_DEBUG_
       print : print " SetLocale info = " & _LOCAL_VERIF_1234567890 : print : print
@@ -105,7 +104,7 @@ conversion from / to    wstring / string
 	if instr(UCASE(_LOCAL_VERIF_1234567890), "UTF-8") < 1 THEN 'to insure the locale default is utf8
 		Print : Print "Information : from " & __FILE__ & "  line " & __LINE__
 		Print : Print "   Sorry, the program will stop! The Locale setting must be changed before executing again. "
-		Print "   Please set the default Locale to any UTF-8 charset. If not set, the program will not be able to execute."
+		Print :"   Please set the default Locale to any UTF-8 charset. If not set, the program will not be able to execute."
 		End
    END IF
 #ELSE
@@ -342,14 +341,11 @@ conversion from / to    wstring / string
 	' ========================================================================================
 	PRIVATE DESTRUCTOR DWSTR
 		DWSTR_DP( "***DWSTR DESTRUCTOR - buffer: " & WSTR(m_pBuffer))
-		IF m_pBuffer <> 0 and m_Flag = 0 THEN
-			DWSTR_DP( "   DWSTR DESTRUCTOR - deallocated: " & WSTR(m_pBuffer))
+		IF m_pBuffer <> 0 and m_Flag = 0 THEN            '**** if mFlag = 1 do not deallocate, because not allocated here
 			Deallocate(m_pBuffer)
 			m_pBuffer = NULL
-		elseIF m_pBuffer <> 0 and m_Flag = 1 THEN            '**** if mFlag = 1 do not deallocate, because not allocated here
-			DWSTR_DP( "   DWSTR DESTRUCTOR - m_Flag = 1, not deallocated: " & WSTR(m_pBuffer))
 		else
-			DWSTR_DP( "   DWSTR DESTRUCTOR - error, already deallocated: " & WSTR(m_pBuffer))
+			DWSTR_DP( "   DWSTR DESTRUCTOR - not deallocated: " & WSTR(m_pBuffer))
 		end if
 	END DESTRUCTOR
 	' ========================================================================================
@@ -415,7 +411,7 @@ conversion from / to    wstring / string
 	' ========================================================================================
 	PRIVATE OPERATOR * (BYREF ust AS DWSTR) BYREF AS WSTRING
 		DWSTR_DP( "DWSTR OPERATOR * buffer: " & WSTR(ust.m_pBuffer))
-		RETURN *ust.m_pBuffer
+		RETURN * ust.m_pBuffer
 	END OPERATOR
 	' ========================================================================================
 	' ========================================================================================
@@ -522,7 +518,6 @@ conversion from / to    wstring / string
 		m_Capacity = nValue
 		' Mark the end of the string with a null
 		m_pBuffer[m_BufferLen] = 0
-		DWSTR_DP( "DWSTR ResizeBuffer ;   m_BufferLen = " &(WSTR(m_BufferLen)))
 	END SUB
 	' ========================================================================================
 
@@ -539,9 +534,7 @@ conversion from / to    wstring / string
 		end if
 		DWSTR_DP( "DWSTR WriteBuffer " & WSTR(nNumWchars))
 		this.ResizeBuffer(nNumWchars)
-		DWSTR_DP( "DWSTR WriteBuffer  m_BufferLen * _MY_SIZE_WSTRING_ " & WSTR(m_BufferLen * _MY_SIZE_WSTRING_))
 		memcpy(m_pBuffer , addrMemory , m_BufferLen * _MY_SIZE_WSTRING_)
-
 		' Mark the end of the string with a null
 		m_pBuffer[m_BufferLen] = 0
 		#IFDEF ___STORE___SURROGATE___PAIRS___
@@ -646,10 +639,8 @@ conversion from / to    wstring / string
 		DIM ps2 as wstring ptr = cptr(wstring ptr , strptr(s2))
 		IF ps2 THEN
 			#IFDEF __AS__LINUX__                        ' assumed it is always utf8 coded
-				dim as integer i2 = i1
-				UTFToWChar(1 , strptr(ansiStr) , ps2 ,  @i2)
-				ulen = i2
-				DWSTR_DP( "DWSTR Add STRING ansiStr = " & *ps2)
+				UTFToWChar(1 , strptr(ansiStr) , ps2 , cptr(integer ptr , @i1))
+				ulen = i1
 			#ELSE                                      ' assumed it is not utf8 coded
 				MultiByteToWideChar(0 , MB_PRECOMPOSED , STRPTR(ansiStr) , ulen , ps2 , i1)
 			#ENDIF
@@ -902,9 +893,8 @@ conversion from / to    wstring / string
 		DIM ps2 as wstring ptr = cptr(wstring ptr , strptr(s2))
 		IF ps2 THEN
 			#IFDEF __AS__LINUX__                        ' assumed it is always utf8 coded
-				dim as integer i2 = i1
-				UTFToWChar(1 , strptr(ansiStr) , ps2 ,  @i2)
-				nLenString = i2
+				UTFToWChar(1 , strptr(ansiStr) , ps2 , cptr(integer ptr , @i1))
+				nLenString = i1
 			#ELSE                                      ' assumed it is not utf8 coded
 				MultiByteToWideChar(0 , MB_PRECOMPOSED , STRPTR(ansiStr) , nLenString , ps2 , i1)
 			#ENDIF
@@ -985,9 +975,8 @@ conversion from / to    wstring / string
 		DIM ps2 as wstring ptr = cptr(wstring ptr , strptr(s2))
 		IF ps2 THEN
 			#IFDEF __AS__LINUX__                        ' assumed it is always utf8 coded
-				dim as integer i2 = i1
-				UTFToWChar(1 , strptr(ansiStr) , ps2 ,  @i2)
-				nLenString = i2
+				UTFToWChar(1 , strptr(ansiStr) , ps2 , cptr(integer ptr , @i1))
+				nLenString = i1
 			#ELSE                                      ' assumed it is not utf8 coded
 				MultiByteToWideChar(0 , MB_PRECOMPOSED , STRPTR(ansiStr) , nLenString , ps2 , i1)
 			#ENDIF
@@ -1252,7 +1241,6 @@ conversion from / to    wstring / string
 	'======================================================================================================
 	PRIVATE Function Dw_Mid(BYREF ust AS DWSTR , BYVAL start AS LONG , BYVAL n AS LONG = &h7FFFFFFE) AS DWSTR
 		if start < 1 or start > Ust.m_BufferLen or n < 1 THEN function = "" : exit function
-		if n > Ust.m_BufferLen THEN n = Ust.m_BufferLen
 		#IFNDEF __AS__LINUX__
 			#IFNDEF ___USE___UCS2___ONLY___
 				dim nsur as long
@@ -1272,13 +1260,7 @@ conversion from / to    wstring / string
 					loop
 					start += nsur
 					if start > Ust.m_BufferLen THEN function = "" : exit function
-					dim as ulongint temp1 = start
-					temp1 +=n
-					if temp1 >  ust.m_BufferLen THEN
-						temp = ust.m_BufferLen
-					else
-						temp = start + n
-                    END IF
+					temp = start + n
 					do
 						nsur = ust.Sur_Count(start, temp)
 						if temp - nsur - start =  n  then exit do
@@ -1413,9 +1395,7 @@ conversion from / to    wstring / string
 			DIM ps2 as wstring ptr = allocate((i1 + 2) *_MY_SIZE_WSTRING_)
 			if ps2 THEN
 				IF nCodePage = "" or instr(ucase(nCodePage) , "UTF-8") > 0 THEN 'assume default utf8
-					dim as integer i2 = i1
-					UTFToWChar(1 , strptr(ansiStr) , ps2 , @i2)
-					i1= i2
+					UTFToWChar(1 , strptr(ansiStr) , ps2 , Cptr(integer ptr , @i1))
 				ELSE
 					MbsToWcs_2(nCodePage , ps2 , strptr(ansiStr) , i1)
 				END IF
@@ -1432,9 +1412,7 @@ conversion from / to    wstring / string
 			DIM ps2 as wstring ptr = allocate((i1 + 2) *_MY_SIZE_WSTRING_)
 			if ps2 THEN
 				IF nCodePage = CP_UTF8 THEN
-					dim as integer i2 = i1
-					UTFToWChar(1 , strptr(ansiStr) , ps2 , @i2) ' **** much faster than 2 times MultiByteToWideChar
-					i1= i2
+					UTFToWChar(1 , strptr(ansiStr) , ps2 , Cptr(integer ptr , @i1)) ' **** much faster than 2 times MultiByteToWideChar
 				ELSE
 					MultiByteToWideChar(nCodePage , MB_PRECOMPOSED , STRPTR(ansiStr) , i1 , ps2 , i1 + 2)
 				END IF
@@ -1588,9 +1566,7 @@ conversion from / to    wstring / string
 				#ELSE
 					dim nsur as long = dws1.Sur_Count()
 				#ENDIF
-				if nsur > 0 THEN
-					return *dw_mid(dws1, 1, position - 1) & *Dw_Chr(ucode) & *dw_mid(dws1, position + 1) ' can be improved
-				end if
+				if nsur > 0 THEN return *dw_mid(dws1, 1, position - 1) & *Dw_Chr(ucode) & *dw_mid(dws1, position + 1) ' can be improved
 			#ELSE
 				if ucode >= &H10000 then ucode = 126
 			#ENDIF
@@ -1599,7 +1575,7 @@ conversion from / to    wstring / string
 		RETURN dws1.m_pBuffer
 	END FUNCTION
 
- 	' ========================================================================================
+	' ========================================================================================
 	' gets "unicode" code char of a DWSTR at position counted in unit code not wchar
 	' ========================================================================================
 	PRIVATE FUNCTION Dw_Asc(BYREF dws1 AS DWSTR , BYVAL position AS LONG ) AS ULONG '****
@@ -1663,7 +1639,7 @@ conversion from / to    wstring / string
 		PRIVATE FUNCTION Dwstr_To_Str2(BYREF DWsrc AS DWSTR , BYREF codepage AS STRING) AS STRING
 			dim         as long iflag
 			DIM loc0    as string = *setlocale(LC_CTYPE, 0) ' current codepage before , has to be restored if changed
-			if instr(ucase(CodePage) , "UTF-8") > 0 and instr(ucase(loc0) , "UTF-8") > 0 then
+			if instr(ucase(nCodePage) , "UTF-8") > 0 and instr(ucase(loc0) , "UTF-8") > 0
 				'do nothing
 			elseif ucase(loc0) <> ucase(codepage) THEN 'verify if requested codepage is different than the current one
 				setlocale(LC_CTYPE , codepage)          'change to new codepage
@@ -1681,7 +1657,7 @@ conversion from / to    wstring / string
 
 			dim         as long iflag
 			DIM loc0    as string = *setlocale(LC_CTYPE, 0) ' current codepage before , has to be restored if changed
-			if instr(ucase(CodePage) , "UTF-8") > 0 and instr(ucase(loc0) , "UTF-8") > 0 then
+			if instr(ucase(nCodePage) , "UTF-8") > 0 and instr(ucase(loc0) , "UTF-8") > 0
 				'do nothing
 			elseif ucase(loc0) <> ucase(codepage) THEN 'verify if requested codepage is different than the current one
 				setlocale(LC_CTYPE , codepage)          'change to new codepage
@@ -1960,7 +1936,7 @@ conversion from / to    wstring / string
 			Do While DWsrc.m_BufferLen > x
 				if not IS_FULL_VALID_RANGE(DWsrc.m_pBuffer[x])THEN
 					DWsrc.m_pBuffer[x] = 126
-				END IF
+            END IF
 				x += 1
 			loop
 		#ENDIF
@@ -2065,33 +2041,33 @@ conversion from / to    wstring / string
 
 	END FUNCTION
 
-	 /' PRIVATE OPERATOR &(BYREF ust1 AS DWSTR , BYREF st2 AS STRING) AS DWSTR
-		DWSTR_DP( "OPERATOR & DWSTR :  DWSTR & WSTRING")
-		DIM AS LONG l2 = len(st2)
-		DIM pNewBuffer AS WSTRING PTR =  allocate((ust1.m_BufferLen + l2 + 2) *_MY_SIZE_WSTRING_)
-		IF pNewBuffer THEN
-			memcpy(pNewBuffer , ust1.m_pBuffer , ust1.m_BufferLen * _MY_SIZE_WSTRING_)
-			memcpy(pNewBuffer + ust1.m_BufferLen , -Dw_Wstr(st2) , l2 * _MY_SIZE_WSTRING_)
-			pNewBuffer[ust1.m_BufferLen + l2] = 0
-			pNewBuffer[ust1.m_BufferLen + l2 + 1] = _MY_TRAP_NUMBER_ '****extra value to check validity
-			RETURN DWSTR(cptr(ubyte ptr , pNewBuffer) , ust1.m_BufferLen + l2 , - 1, ust1.m_SurPair )
-		END IF
-		RETURN ""
-	END OPERATOR
+'	PRIVATE OPERATOR &(BYREF ust1 AS DWSTR , BYREF st2 AS STRING) AS DWSTR
+'		DWSTR_DP( "OPERATOR & DWSTR :  DWSTR & WSTRING")
+'		DIM AS LONG l2 = len(st2)
+'		DIM pNewBuffer AS WSTRING PTR =  allocate((ust1.m_BufferLen + l2 + 2) *_MY_SIZE_WSTRING_)
+'		IF pNewBuffer THEN
+'			memcpy(pNewBuffer , ust1.m_pBuffer , ust1.m_BufferLen * _MY_SIZE_WSTRING_)
+'			memcpy(pNewBuffer + ust1.m_BufferLen , -Dw_Wstr(st2) , l2 * _MY_SIZE_WSTRING_)
+'			pNewBuffer[ust1.m_BufferLen + l2] = 0
+'			pNewBuffer[ust1.m_BufferLen + l2 + 1] = _MY_TRAP_NUMBER_ '****extra value to check validity
+'			RETURN DWSTR(cptr(ubyte ptr , pNewBuffer) , ust1.m_BufferLen + l2 , - 1, ust1.m_SurPair )
+'		END IF
+'		RETURN ""
+'	END OPERATOR
 
-	PRIVATE OPERATOR &(BYREF st1 AS STRING , BYREF ust2 AS DWSTR) AS DWSTR
-		DWSTR_DP( "OPERATOR & DWSTR :  DWSTR & WSTRING")
-		DIM AS LONG l1 = len(st1)
-		DIM pNewBuffer AS WSTRING PTR =  allocate((ust2.m_BufferLen + l1 + 2) *_MY_SIZE_WSTRING_)
-		IF pNewBuffer THEN
-			memcpy(pNewBuffer , -Dw_Wstr(st1), l1 * _MY_SIZE_WSTRING_)
-			memcpy(pNewBuffer + l1, ust2.m_pBuffer , ust2.m_BufferLen * _MY_SIZE_WSTRING_)
-			pNewBuffer[ust2.m_BufferLen + l1] = 0
-			pNewBuffer[ust2.m_BufferLen + l1 + 1] = _MY_TRAP_NUMBER_ '****extra value to check validity
-			RETURN DWSTR(cptr(ubyte ptr , pNewBuffer) , ust2.m_BufferLen + l1 , - 1, ust2.m_SurPair )
-		END IF
-		RETURN ""
-	END OPERATOR '/
+'	PRIVATE OPERATOR &(BYREF st1 AS STRING , BYREF ust2 AS DWSTR) AS DWSTR
+'		DWSTR_DP( "OPERATOR & DWSTR :  DWSTR & WSTRING")
+'		DIM AS LONG l1 = len(st1)
+'		DIM pNewBuffer AS WSTRING PTR =  allocate((ust2.m_BufferLen + l1 + 2) *_MY_SIZE_WSTRING_)
+'		IF pNewBuffer THEN
+'			memcpy(pNewBuffer , -Dw_Wstr(st1), l1 * _MY_SIZE_WSTRING_)
+'			memcpy(pNewBuffer + l1, ust2.m_pBuffer , ust2.m_BufferLen * _MY_SIZE_WSTRING_)
+'			pNewBuffer[ust2.m_BufferLen + l1] = 0
+'			pNewBuffer[ust2.m_BufferLen + l1 + 1] = _MY_TRAP_NUMBER_ '****extra value to check validity
+'			RETURN DWSTR(cptr(ubyte ptr , pNewBuffer) , ust2.m_BufferLen + l1 , - 1, ust2.m_SurPair )
+'		END IF
+'		RETURN ""
+'	END OPERATOR
 
 	' ========================================================================================
 

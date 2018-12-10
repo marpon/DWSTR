@@ -32,7 +32,9 @@
 
 declare sub show_info( byref dw1 as DWSTR , byref dw2 as DWSTR , byval i as long = 0)
 
+
 print : print "testing  last  DWSTR.inc  "
+print : print " SetLocale info = " & _LOCAL_VERIF_1234567890 : print : print
 
 scope                                            'interesting to check the destructor action on debugg mode
 
@@ -40,12 +42,21 @@ scope                                            'interesting to check the destr
    print "=======================================================" : print : print
 
 
-   dim mydw111 as dwstr = dw_string(60, 0)
+   'dim mydw111 as dwstr = dw_string(60, 0)
+
+	dim mydw111 as dwstr  = "test"
+	print "after"
+	print *mydw111
    print : print
-   Show_Info(*mydw111 & wstr( "   Len ") & wstr(mydw111.m_BufferLen) , "capacity " & wstr(mydw111.capacity))
-   print
-   mydw111 = 4
-   mydw111 = dw_str( "test")
+
+
+   Show_Info("mydw111 = " & *mydw111 & wstr( "   Len ") & wstr(mydw111.m_BufferLen) , "capacity " & wstr(mydw111.capacity))
+   
+   'mydw111 = 4
+
+   'mydw111 = dw_str( "test")
+	
+
    print : print
    Show_Info(*mydw111 & wstr( "   Len ") & wstr(mydw111.m_BufferLen) , "capacity " & wstr(mydw111.capacity))
    dim messs as string = "abcdef"
@@ -63,12 +74,16 @@ scope                                            'interesting to check the destr
 	print "pds1 = " & pds1 & " *pds1->m_pBuffer " & *pds1 -> m_pBuffer & "   " & @dw777
 	print " Correct : different PTRs !" : print : print
 
-   print "strptr : " & strptr(dw777) & " " & - dw777 ' to see the 2 possible forms
-   'check conversion form non utf8 charset
+   print "strptr : " & strptr(dw777) & " " & -dw777 ' to see the 2 possible forms
+   'check conversion from non utf8 charset
    dw777 = Dw_Wstr(!"\&hCA\&hE0\&hEA\&hE8\&hE5-\&hF2\&hEE \&hEA\&hF0\&hE0\&hEA\&hEE\&hE7\&hFF\&hE1\&hF0\&hFB" , "ru_RU.iso-8859-5")
 
    print : print
    Show_Info(dw777 + wstr( "   Len ") + wstr(dw777.m_BufferLen) , "capacity " + wstr(dw777.capacity))
+	dim as wstring ptr ws0 = strptr(dw777)
+print : print
+	print *ws0 : print mid(*ws0 , 4)
+print : print
    dim dw778 as dwstr = mid(*dw777 , 4)
    Show_Info(dw778 & wstr( "   Len ") + wstr(dw778.m_BufferLen) , "capacity " + wstr(dw778.capacity))
    dim dw111 as dwstr = dw_string(248)
@@ -97,13 +112,13 @@ scope                                            'interesting to check the destr
    Show_Info(Dw_Str(smess2) , "Show_Info,  test  dw_Str")
    print smess2
    smess2 = ucase(*smess2)
-   Show_Info(smess2 , "test  ucase")
+   Show_Info(smess2 , "test  ucase   len=" & len(smess2) )
    print smess2
 
 
    ' change to your desired chars to test the conversion with bytes > 128 from your keyboard
-   dw2 = dw_wstr(!"\&hE9 a &hE0&hE7&hE8 &hA4 " , "fr-FR.iso-8859-15") 'accent chars and euro
-   Show_Info(dw2 , "test dw_wstr")
+   dw2 = dw_wstr("èçàé€","fr_FR.UTF-8" ) 'accent chars and euro
+   Show_Info(dw2 , "test dw_wstr   len=" & len(dw2))
    print dw2
    dw2 = ucase(*dw2)
    Show_Info(dw2 , "test ucase")
@@ -113,8 +128,7 @@ scope                                            'interesting to check the destr
    dw2 = dw_chr(&h1D11E)                         ' test input code > &h10000
    ' how is it see on the console? it is possible to show with the console font?
    Show_Info(dw2 , "test dw_chr")
-   print dw2                                     ' you will see ?? thats shows the pair is really done (surrogate pair) for that unit code
-   Show_Info("len = " & len(dw2) & "  even it is only 1 unit code " , "len is equal 2, because surrogate pair")
+                                    
    dw2 = "abcdefgh"
    dw2.insert( "ABC" , 4)
    Show_Info(dw2 , "test dw2.insert")
@@ -311,12 +325,18 @@ end scope
 print : print "Press key to finish !"
 sleep
 
+sub mywait()
+
+	Do
+		Sleep 1, 1
+	Loop Until Inkey <> ""
+end sub
 
 
-sub show_info(byref dw1 as DWSTR , byref dw2 as DWSTR , byval i2 as long = 0)
-   print "____________________________________________________________" : print "              " & Dw_Str(dw2)
-   print Dw_Str(dw1)
-   if i2 = 0 then print "______________________________________________  > key please" : print : sleep
+sub show_info(byref dw1 as DWSTR , byref dw2 as DWSTR , byval i2 as long )
+   print "____________________________________________________________" : print "              " & *dw2
+   print *dw1
+   if i2 = 0 then print "______________________________________________  > key please" : print : mywait()
 	if i2 <> 0 then print "____________________________________________________________" : print
 END sub
 
